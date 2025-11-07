@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Welcome to My E-Shop!</h1>
+    <p>Your one-stop shop for amazing products.</p>
+    <div class="hero">
+        <div class="hero-text">
+            <h2>Discover Our Latest Collection</h2>
+            <p>Shop now for the best deals!</p>
+            <a href="{{ url_for('shop.product_list') }}" class="btn">Shop Now</a>
+        </div>
+    </div>
+{% endblock %}

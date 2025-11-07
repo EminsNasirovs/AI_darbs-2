@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Your Purchase History</h1>
+    {% if orders %}
+        <div class="purchase-history-list">
+            {% for order in orders %}
+            <div class="order-card">
+                <h3>Order #{{ order.id }} <small>({{ order.order_date.strftime('%Y-%m-%d %H:%M') }})</small></h3>
+                <p><strong>Status:</strong> {{ order.status }}</p>
+                <p><strong>Total Amount:</strong> ${{ "%.2f"|format(order.total_amount) }}</p>
+                <h4>Items:</h4>
+                <ul class="order-items-list">
+                    {% for item in order.items %}
+                    <li>{{ item.quantity }} x {{ item.product.name }} (at ${{ "%.2f"|format(item.price) }} each)</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>You haven't placed any orders yet. <a href="{{ url_for('shop.product_list') }}">Start shopping!</a></p>
+    {% endif %}
+{% endblock %}

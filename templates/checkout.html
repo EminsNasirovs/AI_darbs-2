@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Checkout</h1>
+    <div class="checkout-summary">
+        <h2>Order Summary</h2>
+        <ul class="order-summary-list">
+            {% for item in cart_items %}
+            <li>{{ item.quantity }} x {{ item.product.name }} - ${{ "%.2f"|format(item.product.price * item.quantity) }}</li>
+            {% endfor %}
+        </ul>
+        <p class="checkout-total"><strong>Total: ${{ "%.2f"|format(total_amount) }}</strong></p>
+    </div>
+
+    <div class="payment-section">
+        <h2>Payment Information (Mock)</h2>
+        <p>This is a mock checkout. No real payment processing will occur.</p>
+        <form action="{{ url_for('shop.checkout') }}" method="post">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                <label for="card_number">Card Number</label>
+                <input type="text" id="card_number" name="card_number" placeholder="**** **** **** ****" required>
+            </div>
+            <div class="form-group">
+                <label for="expiry_date">Expiry Date</label>
+                <input type="text" id="expiry_date" name="expiry_date" placeholder="MM/YY" required>
+            </div>
+            <div class="form-group">
+                <label for="cvv">CVV</label>
+                <input type="text" id="cvv" name="cvv" placeholder="***" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Place Order</button>
+        </form>
+    </div>
+{% endblock %}

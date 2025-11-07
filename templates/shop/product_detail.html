@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="product-detail-container">
+        <div class="product-image-large">
+            <img src="{{ product.image_url }}" alt="{{ product.name }}">
+        </div>
+        <div class="product-info">
+            <h1>{{ product.name }}</h1>
+            <p class="product-price-large">${{ "%.2f"|format(product.price) }}</p>
+            <p class="product-description">{{ product.description }}</p>
+            <p class="product-stock">In Stock: {{ product.stock }}</p>
+
+            <form action="" method="post" novalidate>
+                {{ form.hidden_tag() }}
+                <div class="form-group">
+                    {{ form.quantity.label }}
+                    {{ form.quantity(class_="form-control", value=1, min=1, max=product.stock) }}
+                    {% for error in form.quantity.errors %}
+                    <span style="color: red;">[{{ error }}]</span>
+                    {% endfor %}
+                </div>
+                <p>{{ form.submit(class_="btn btn-primary btn-lg") }}</p>
+            </form>
+            <a href="{{ url_for('shop.product_list') }}" class="btn btn-secondary">Back to Shop</a>
+        </div>
+    </div>
+{% endblock %}
