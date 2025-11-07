@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageElement = incomingChatLi.querySelector("p");
 
         // TODO: Sagatavot pieprasījuma opcijas (request options)
-        // Pārvērtiet par JSON virkni objektu, kas satur gan pēdējo lietotāja ziņu, gan visu iepriekšējo sarunas vēsturi.
+        // Izveidojiet JSON virknes objektu, kas satur gan pēdējo lietotāja ziņu, gan visu iepriekšējo sarunas vēsturi.
         const requestOptions = {
         };
 
