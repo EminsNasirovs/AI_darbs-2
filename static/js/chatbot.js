@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendChatBtn = document.querySelector(".chat-input span");
 
     // 1. SOLIS: Izveidot mainīgo sarunas vēstures glabāšanai.
+    // TODO: Izveidojiet mainīgo sarunas vēstures glabāšanai.
+    let chatHistory = []; 
 
     const createChatLi = (message, className) => {
         const chatLi = document.createElement("li");
@@ -22,19 +24,53 @@ document.addEventListener('DOMContentLoaded', () => {
         const messageElement = incomingChatLi.querySelector("p");
 
         // TODO: Sagatavot pieprasījuma opcijas (request options)
-        // Izveidojiet JSON virknes objektu, kas satur gan pēdējo lietotāja ziņu, gan visu iepriekšējo sarunas vēsturi.
         const requestOptions = {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            // Izveidojiet JSON virknes objektu, kas satur gan pēdējo lietotāja ziņu, gan visu iepriekšējo sarunas vēsturi.
+            // Pēdējā ziņa jau ir iekļauta `chatHistory` masīva beigās funkcijā `handleChat`.
+            body: JSON.stringify({
+                // Jūsu servera pusei ir nepieciešama tikai pēdējā ziņa atsevišķi, bet mēs varam iegūt to no vēstures
+                // Taču, lai būtu skaidrs un atbilstošs jūsu servera implementācijai, mēs izsūtām visu vēsturi un pēdējo ziņu.
+                // Mēs izņemam pēdējo ziņu, jo tā ir lietotāja ziņa, un nosūtām atlikušo vēsturi.
+                history: chatHistory.slice(0, -1), // visa vēsture, izņemot pēdējo (lietotāja) ziņu
+                message: chatHistory[chatHistory.length - 1].content // Pēdējā (lietotāja) ziņa
+            })
         };
 
         // TODO: Izsaukt `fetch()` ar izveidotajām opcijām.
-        // Pēc atbildes saņemšanas:
-        // 1. Atjaunojiet `messageElement` saturu ar saņemto atbildi.
-        // 2. Pievienojiet bota atbildi mainīgajā sarunas vēstures glabāšanai.
+        fetch(API_URL, requestOptions)
+            .then(res => res.json())
+            .then(data => {
+                const botResponse = data.response;
+                
+                // 1. Atjaunojiet `messageElement` saturu ar saņemto atbildi.
+                messageElement.textContent = botResponse;
+                
+                // 2. Pievienojiet bota atbildi mainīgajā sarunas vēstures glabāšanai.
+                // Pievienojam sarunas vēsturei ar lomu "assistant"
+                chatHistory.push({ role: "assistant", content: botResponse });
+            })
+            .catch(() => {
+                messageElement.textContent = "Oops! Something went wrong. Please try again.";
+            })
+            .finally(() => {
+                chatbox.scrollTo(0, chatbox.scrollHeight);
+                // Pēc atbildes saņemšanas vajadzētu atkārtoti iespējot ievades lauku (ja tas tika atspējots)
+                chatInput.disabled = false;
+                sendChatBtn.disabled = false;
+            });
     }
 
     const handleChat = () => {
         const userMessage = chatInput.value.trim();
         if(!userMessage) return;
+
+        // Pagaidu atspējošana, kamēr AI atbild
+        chatInput.disabled = true; 
+        sendChatBtn.disabled = true;
 
         chatInput.value = "";
         chatInput.style.height = `auto`;
@@ -44,11 +80,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // 3. SOLIS: Pievienot lietotāja ziņu mainīgajā sarunas vēstures glabāšanai
         // TODO: Pievienojiet ziņu masīvam pareizajā formātā (kā objektu ar "role" un "content").
+        chatHistory.push({ role: "user", content: userMessage });
         
         setTimeout(() => {
             const incomingChatLi = createChatLi("Thinking...", "incoming");
             chatbox.appendChild(incomingChatLi);
             chatbox.scrollTo(0, chatbox.scrollHeight);
+            // Izsaucam atbildes ģenerēšanas funkciju
             generateResponse(incomingChatLi);
         }, 600);
     }

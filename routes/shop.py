@@ -1,14 +1,16 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from models import Product, CartItem, Order, OrderItem
 from database import db
 from flask_login import current_user, login_required
 from forms import AddToCartForm, CheckoutForm
+from chatbot_integration.chatbot_service import ChatbotService # Nepieciešams importēt
 
 shop_bp = Blueprint('shop', __name__, template_folder='../templates')
 
 def get_products_from_db():
     """
     Fetches all products from the database and formats them into a simple string for the LLM.
+    This function supports RAG (Retrieval-Augmented Generation) for the chatbot.
     """
     try:
         products = Product.query.all()
@@ -17,12 +19,16 @@ def get_products_from_db():
         
         product_list_str = "Here is a list of available products:\n"
         for p in products:
-            product_list_str += f"- Name: {p.name}, Price: ${p.price:.2f}, Stock: {p.stock}\n"
+            # Pievienojot $ pie cenas, tas atbilst jūsu get_products_from_db funkcijas formatējumam
+            product_list_str += f"- Name: {p.name}, Price: ${p.price:.2f}, Stock: {p.stock}\n" 
         
         return product_list_str
     except Exception as e:
+        # Kļūdu apstrāde datu bāzes datus iegūšanai
         print(f"Error fetching products from DB: {e}")
         return "I was unable to access the product catalog."
+
+# --- Veikala Maršruti ---
 
 @shop_bp.route('/shop')
 def product_list():
@@ -33,6 +39,8 @@ def product_list():
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
     form = AddToCartForm()
+    
+    # ... (Loģika produkta detaļai, kas palika nemainīga) ...
     if form.validate_on_submit():
         if not current_user.is_authenticated:
             flash('You need to log in to add items to your cart.', 'info')
@@ -59,6 +67,33 @@ def product_detail(product_id):
         return redirect(url_for('shop.cart'))
     
     return render_template('shop/product_detail.html', title=product.name, product=product, form=form)
+
+# --- Čatbota Endpoint ---
+
+@shop_bp.route('/chatbot', methods=['POST'])
+def chatbot_endpoint():
+    # 1. Iegūst datus no pieprasījuma (ziņa un vēsture no JS)
+    data = request.get_json()
+    user_message = data.get('message')
+    chat_history = data.get('history', []) 
+
+    if not user_message:
+        return jsonify({"response": "Nav saņemts ziņojums."}), 400
+
+    # 2. Iegūst produktu sarakstu (lai pievienotu kontekstu)
+    product_list_str = get_products_from_db() 
+    
+    # 3. Inicializē servisu ar aktuālo kontekstu
+    # Katrā pieprasījumā inicializējam, lai nodotu aktuālo produktu sarakstu sistēmas instrukcijai
+    chatbot_service = ChatbotService(product_list_str=product_list_str) 
+
+    # 4. Saņem atbildi no MI modeļa
+    api_response = chatbot_service.get_chatbot_response(user_message, chat_history)
+
+    # 5. Atgriež atbildi JSON formātā
+    return jsonify(api_response)
+
+# --- Iepirkumu groza un Pirkumu vēstures Maršruti ---
 
 @shop_bp.route('/cart')
 @login_required
@@ -91,6 +126,7 @@ def checkout():
     total_amount = sum(item.product.price * item.quantity for item in cart_items)
     checkout_form = CheckoutForm()
 
+    # ... (Loģika norēķiniem, kas palika nemainīga) ...
     if checkout_form.validate_on_submit():
         new_order = Order(user_id=current_user.id, total_amount=total_amount, status='Processing')
         db.session.add(new_order)
